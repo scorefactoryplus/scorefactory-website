@@ -215,6 +215,8 @@ details p{padding-bottom:16px;color:var(--mute);max-width:70ch}
 .srcg{display:flex;gap:6px;align-items:center}
 .srcg .btn{min-width:44px;padding-inline:10px}
 .exp{line-height:1.6}
+.pdiv{display:block;width:60%;height:1px;background:var(--line);margin-block:8px}
+.pod b{font-family:var(--f-display)}
 </style>
 
 
@@ -651,6 +653,7 @@ function makeGen(g){
 (function(){
 'use strict';
 /* ====== SETTINGS you can change later ====== */
+
 var CFG={
   phone:'+91 8252980524', wa:'https://wa.me/918252980524',
   youtube:'https://www.youtube.com/@shekharhs09', instagram:'https://www.instagram.com/scorefactory_/',
@@ -773,18 +776,19 @@ function toppersBox(compact){
   if(!all.length){
     return '<div class="card glass"><div class="pill-row" style="margin:0 0 10px"><span class="tag soon">Updated every month</span></div><h3>Monthly test toppers</h3><p class="mute" style="margin-block:8px 16px;max-width:62ch">Toppers of each monthly test will be listed here with name, class, marks and rank. The list opens after the first monthly test result is entered.</p>'+
     '<div class="podium">'+[2,1,3].map(function(r){return '<div class="pod r'+r+'"><span class="pn">'+r+'</span><b>Rank '+r+'</b><small class="mute">Name appears here</small></div>'}).join('')+'</div>'+
-    (compact?'':'<p class="mute sm" style="margin-top:16px">To add results, send: month, class, student name, marks and total marks. Names are published only with written permission from the parent.</p>')+'</div>';
+    (compact?'':'<p class="mute sm" style="margin-top:16px">To add results, send: month, class, student name, marks and rank. Names are published only with written permission from the parent.</p>')+'</div>';
   }
-  var list=all.filter(function(t){return t.month===m&&(!tp.c||String(t.cls)===String(tp.c))});
-  var classes=[];list.forEach(function(t){if(classes.indexOf(t.cls)<0)classes.push(t.cls)});classes.sort(function(a,b){return a-b});
+  var list=all.filter(function(t){return t.month===m&&(!tp.c||String(t.cls)===String(tp.c))}).sort(function(a,b){return a.rank-b.rank});
+  var groups={};list.forEach(function(t){(groups[t.rank]=groups[t.rank]||[]).push(t)});
+  var topRanks=[1,2,3].filter(function(r){return groups[r]});
+  var order=topRanks.length===3?[2,1,3]:topRanks;
+  var rest=compact?[]:list.filter(function(t){return t.rank>3});
+  function mk(t){return esc(t.marks+(t.total?' / '+t.total:''))}
+  var pod=order.length?'<div class="podium" style="grid-template-columns:repeat('+order.length+',minmax(0,1fr))">'+order.map(function(r){
+    return '<div class="pod r'+r+'"><span class="pn">'+r+'</span>'+groups[r].map(function(t){return '<b>'+esc(t.name)+'</b><small class="mute">Class '+t.cls+' &middot; '+mk(t)+'</small>'}).join('<span class="pdiv"></span>')+'</div>'}).join('')+'</div>':'<p class="mute sm">No entries for this class in this month.</p>';
   var ctl=compact?'':'<div class="grid g2" style="margin-block:14px"><div class="fld"><label for="tp-month">Month</label><select id="tp-month">'+months.map(function(x){return '<option value="'+x+'"'+(x===m?' selected':'')+'>'+monthName(x)+'</option>'}).join('')+'</select></div><div class="fld"><label for="tp-cls">Class</label><select id="tp-cls"><option value="">All classes</option>'+CLASSES.map(function(c){return '<option value="'+c.id+'"'+(String(tp.c)===String(c.id)?' selected':'')+'>Class '+c.id+'</option>'}).join('')+'</select></div></div>';
-  var body=classes.map(function(c){
-    var rows=list.filter(function(t){return t.cls===c}).sort(function(a,b){return a.rank-b.rank}),top=rows.slice(0,3),rest=compact?[]:rows.slice(3);
-    var order=[top[1],top[0],top[2]];
-    return '<h3 style="margin:18px 0 10px;color:var('+CC[c]+')">Class '+c+'</h3><div class="podium">'+order.map(function(t,i){if(!t)return '';var r=t.rank;return '<div class="pod r'+r+'"><span class="pn">'+r+'</span><b>'+esc(t.name)+'</b><small class="mute">'+esc(t.marks+(t.total?' / '+t.total:''))+'</small></div>'}).join('')+'</div>'+
-    (rest.length?'<div class="tbl" style="margin-top:10px"><table><thead><tr><th class="n">Rank</th><th>Name</th><th class="n">Marks</th></tr></thead><tbody>'+rest.map(function(t){return '<tr><td class="n">'+t.rank+'</td><td>'+esc(t.name)+'</td><td class="n">'+esc(t.marks+(t.total?' / '+t.total:''))+'</td></tr>'}).join('')+'</tbody></table></div>':'');
-  }).join('');
-  return '<div class="card glass"><h3>Monthly test toppers</h3><p class="mute sm">'+monthName(m)+'</p>'+ctl+(body||'<p class="mute sm">No entries for this class in this month.</p>')+'</div>';
+  return '<div class="card glass"><h3>Monthly test toppers</h3><p class="mute sm" style="margin-bottom:'+(compact?'14':'0')+'px">'+monthName(m)+(compact?'':' &middot; overall rank across all classes')+'</p>'+ctl+pod+
+    (rest.length?'<div class="tbl" style="margin-top:12px"><table><thead><tr><th class="n">Rank</th><th>Name</th><th>Class</th><th class="n">Marks</th></tr></thead><tbody>'+rest.map(function(t){return '<tr><td class="n">'+t.rank+'</td><td>'+esc(t.name)+'</td><td>'+t.cls+'</td><td class="n">'+mk(t)+'</td></tr>'}).join('')+'</tbody></table></div>':'')+'</div>';
 }
 
 function gallery(){
